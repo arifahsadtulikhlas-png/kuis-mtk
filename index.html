@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penjelajah Galaksi: Kalimat Terbuka & Tertutup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap');
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #050714;
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Canvas Background */
+        #space-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Glassmorphism Styles */
+        .glass-card {
+            background: rgba(13, 22, 45, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            box-shadow: 0 8px 32px 0 rgba(0, 240, 255, 0.15), inset 0 0 15px rgba(168, 85, 247, 0.1);
+        }
+
+        .glass-card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card-hover:hover {
+            border-color: rgba(56, 189, 248, 0.6);
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.4), inset 0 0 20px rgba(168, 85, 247, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Glowing Effects */
+        .glow-text-cyan {
+            text-shadow: 0 0 10px rgba(6, 182, 212, 0.7), 0 0 20px rgba(6, 182, 212, 0.4);
+        }
+        
+        .glow-text-purple {
+            text-shadow: 0 0 10px rgba(168, 85, 247, 0.7), 0 0 20px rgba(168, 85, 247, 0.4);
+        }
+
+        /* Rocket & Planet Floating Animations */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-12px) rotate(3deg); }
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        .floating-rocket {
+            animation: floatSlow 4s ease-in-out infinite;
+        }
+
+        .pulse-bg {
+            animation: pulseGlow 6s ease-in-out infinite;
+        }
+
+        /* Progress Bar Animation */
+        .progress-fill {
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(10, 15, 30, 0.8);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.4);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.7);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center p-3 sm:p-6 min-h-screen relative">
+
+    <!-- Canvas Background Luar Angkasa -->
+    <canvas id="space-canvas"></canvas>
+
+    <!-- Tombol Audio Mute/Unmute (Fixed di Sudut Kanan Atas) -->
+    <div class="fixed top-4 right-4 z-50">
+        <button id="sound-toggle-btn" onclick="toggleSound()" class="glass-card p-3 rounded-full text-cyan-400 hover:text-white hover:border-cyan-400 transition-all duration-300 shadow-lg flex items-center justify-center w-12 h-12" title="Matikan/Nyalakan Suara">
+            <i id="sound-icon" class="fas fa-volume-up text-lg"></i>
+        </button>
+    </div>
+
+    <!-- Container Utama -->
+    <main class="max-w-3xl w-full z-10 my-auto">
+
+        <!-- HEADER BANNER -->
+        <header class="text-center mb-6 relative">
+            <!-- Background Orbs -->
+            <div class="absolute -top-10 left-1/2 -translate-x-1/2 w-48 h-48 bg-purple-600/20 rounded-full blur-3xl pulse-bg pointer-events-none"></div>
+            <div class="absolute -top-5 left-1/3 w-32 h-32 bg-cyan-500/20 rounded-full blur-2xl pulse-bg pointer-events-none"></div>
+
+            <div class="inline-block text-6xl mb-2 floating-rocket drop-shadow-[0_0_15px_rgba(56,189,248,0.5)]">
+                🚀
+            </div>
+            <h1 class="text-3xl sm:text-5xl font-black font-orbitron tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-200 to-purple-400 glow-text-cyan">
+                MISI MATEMATIKA GALAKSI
+            </h1>
+            <p class="text-sky-300 text-sm sm:text-base font-semibold mt-1 tracking-wide">
+                Modul Identifikasi: <span class="text-cyan-300">Kalimat Terbuka</span> & <span class="text-purple-300">Kalimat Tertutup</span>
+            </p>
+        </header>
+
+        <!-- 1. HALAMAN START / PETUNJUK -->
+        <section id="start-screen" class="glass-card rounded-3xl p-6 sm:p-10 text-center space-y-6 relative overflow-hidden">
+            <div class="space-y-3">
+                <h2 class="text-2xl sm:text-3xl font-extrabold font-orbitron text-cyan-300 glow-text-cyan">
+                    Sinyal Transmisi Masuk!
+                </h2>
+                <p class="text-gray-300 leading-relaxed text-sm sm:text-base max-w-xl mx-auto">
+                    Selamat datang di Stasion Komando Luar Angkasa. Dekode sinyal-sinyal matematika yang diterima dari antariksa dengan mengelompokkannya ke dalam jenis kalimat yang tepat!
+                </p>
+            </div>
+
+            <!-- Ringkasan Edukasi Singkat -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left my-6">
+                <div class="p-4 rounded-2xl bg-cyan-950/40 border border-cyan-500/30">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xl">🔓</span>
+                        <h3 class="font-bold font-orbitron text-cyan-400 text-base">Kalimat Terbuka</h3>
+                    </div>
+                    <p class="text-xs text-gray-300 leading-relaxed">
+                        Kalimat yang <span class="text-cyan-300 font-semibold">belum dapat ditentukan</span> nilai kebenarannya (benar atau salah) karena masih memuat **variabel/peubah** (misal: $x, y, n$).
+                    </p>
+                </div>
+                <div class="p-4 rounded-2xl bg-purple-950/40 border border-purple-500/30">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xl">🔒</span>
+                        <h3 class="font-bold font-orbitron text-purple-400 text-base">Kalimat Tertutup</h3>
+                    </div>
+                    <p class="text-xs text-gray-300 leading-relaxed">
+                        Disebut juga **Pernyataan**. Kalimat yang <span class="text-purple-300 font-semibold">sudah pasti</span> bernilai **Benar saja** atau **Salah saja**, tidak bernilai ganda.
+                    </p>
+                </div>
+            </div>
+
+            <button onclick="startQuiz()" class="glass-card glass-card-hover w-full py-4 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-orbitron font-extrabold text-lg rounded-2xl flex items-center justify-center gap-3 transition-all">
+                <i class="fas fa-play"></i> LUNCURKAN MISI
+            </button>
+        </section>
+
+        <!-- 2. HALAMAN KUIS / SOAL -->
+        <section id="quiz-screen" class="glass-card rounded-3xl p-6 sm:p-8 hidden relative">
+            <!-- Header Bar Kuis: Progress, Score, Combo -->
+            <div class="space-y-3 mb-6">
+                <div class="flex justify-between items-center text-xs sm:text-sm font-orbitron">
+                    <div class="flex items-center gap-2 text-cyan-400">
+                        <i class="fas fa-satellite"></i>
+                        <span>PROGRESS: <strong id="question-number" class="text-white">1/10</strong></span>
+                    </div>
+                    <!-- Combo Badge -->
+                    <div id="combo-badge" class="hidden px-3 py-1 bg-gradient-to-r from-amber-500 to-red-500 text-white font-bold text-xs rounded-full shadow-lg animate-bounce">
+                        🔥 COMBO 2x!
+                    </div>
+                    <div class="flex items-center gap-2 text-yellow-400">
+                        <i class="fas fa-star"></i>
+                        <span>SKOR: <strong id="score-display" class="text-white">0</strong></span>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="w-full bg-slate-900/80 rounded-full h-2.5 p-0.5 border border-sky-500/20">
+                    <div id="progress-bar" class="bg-gradient-to-r from-cyan-400 to-purple-500 h-1.5 rounded-full progress-fill" style="width: 10%"></div>
+                </div>
+            </div>
+
+            <!-- Card Tampilan Soal -->
+            <div class="mb-6">
+                <div class="text-xs font-orbitron uppercase text-sky-400 tracking-wider mb-2 flex items-center gap-2">
+                    <i class="fas fa-broadcast-tower animate-pulse"></i> Transmisi Sinyal Matematika:
+                </div>
+                <div id="question-text" class="text-lg sm:text-2xl font-bold text-white bg-slate-950/70 p-6 rounded-2xl border border-sky-500/30 min-h-[110px] flex items-center justify-center text-center shadow-inner leading-relaxed">
+                    <!-- Teks Pertanyaan Muncul Di Sini -->
+                </div>
+            </div>
+
+            <!-- Container Opsi Jawaban -->
+            <div id="options-container" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                <!-- Tombol Opsi Jawaban Dibuat via JS -->
+            </div>
+
+            <!-- Penjelasan / Pembahasan Instan -->
+            <div id="explanation-box" class="hidden p-4 rounded-2xl mb-6 text-sm border transition-all duration-300">
+                <div id="explanation-title" class="flex items-center gap-2 font-bold font-orbitron mb-1 text-base">
+                    <!-- Judul Hasil -->
+                </div>
+                <p id="explanation-text" class="text-gray-200 leading-relaxed text-xs sm:text-sm"></p>
+            </div>
+
+            <!-- Tombol Lanjut -->
+            <button id="next-btn" onclick="nextQuestion()" class="glass-card glass-card-hover hidden w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-orbitron font-bold rounded-2xl flex items-center justify-center gap-2">
+                TRANSMISI BERIKUTNYA <i class="fas fa-arrow-right"></i>
+            </button>
+        </section>
+
+        <!-- 3. HALAMAN RINGKASAN AKHIR -->
+        <section id="result-screen" class="glass-card rounded-3xl p-6 sm:p-10 text-center space-y-6 hidden">
+            <div id="result-badge" class="text-6xl sm:text-7xl floating-rocket">👨‍🚀</div>
+            
+            <div>
+                <h2 class="text-2xl sm:text-4xl font-black font-orbitron text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500 glow-text-cyan">
+                    MISI SELESAI!
+                </h2>
+                <p id="rank-title" class="text-xl font-bold font-orbitron text-cyan-300 mt-1">
+                    Gelar: Komandan Galaksi
+                </p>
+            </div>
+
+            <!-- Card Statistik Skor -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-950/70 p-4 rounded-2xl border border-sky-500/20 max-w-lg mx-auto">
+                <div class="p-2">
+                    <p class="text-xs text-gray-400 font-orbitron">TOTAL SKOR</p>
+                    <p id="final-score" class="text-2xl sm:text-3xl font-black text-yellow-400 font-orbitron">0</p>
+                </div>
+                <div class="p-2">
+                    <p class="text-xs text-gray-400 font-orbitron">AKURASI</p>
+                    <p id="accuracy-text" class="text-2xl sm:text-3xl font-black text-cyan-400 font-orbitron">0%</p>
+                </div>
+                <div class="p-2 col-span-2 sm:col-span-1">
+                    <p class="text-xs text-gray-400 font-orbitron">MAX COMBO</p>
+                    <p id="max-combo-text" class="text-2xl sm:text-3xl font-black text-purple-400 font-orbitron">0x</p>
+                </div>
+            </div>
+
+            <p id="result-message" class="text-gray-300 text-sm sm:text-base max-w-md mx-auto italic"></p>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                <button onclick="toggleReviewModal(true)" class="glass-card glass-card-hover flex-1 py-3.5 bg-slate-800/80 hover:bg-slate-700/80 text-cyan-300 border border-cyan-500/40 font-orbitron font-bold text-sm rounded-2xl flex items-center justify-center gap-2">
+                    <i class="fas fa-list-check"></i> LIHAT PEMBAHASAN
+                </button>
+                <button onclick="restartQuiz()" class="glass-card glass-card-hover flex-1 py-3.5 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-orbitron font-bold text-sm rounded-2xl flex items-center justify-center gap-2">
+                    <i class="fas fa-redo"></i> ULANGI MISI
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL POPUP REKAP PEMBAHASAN AKHIR -->
+    <div id="review-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-card rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col border border-sky-500/40">
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-sky-500/20 flex justify-between items-center">
+                <h3 class="text-lg font-bold font-orbitron text-cyan-300 flex items-center gap-2">
+                    <i class="fas fa-book-open"></i> Rekapitulasi Pembahasan Soal
+                </h3>
+                <button onclick="toggleReviewModal(false)" class="text-gray-400 hover:text-white p-2 text-xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Body (Scrollable List) -->
+            <div id="review-list" class="p-5 overflow-y-auto space-y-4 flex-1">
+                <!-- Daftar Review Soal Dibuat via JS -->
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-sky-500/20 text-center">
+                <button onclick="toggleReviewModal(false)" class="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white font-orbitron text-xs font-bold rounded-xl border border-sky-500/30">
+                    TUTUP
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIKA APLIKASI WEB -->
+    <script>
+        // -------------------------------------------------------------
+        // 1. DATA SOAL MATEMATIKA (Kalimat Terbuka & Tertutup)
+        // -------------------------------------------------------------
+        const questions = [
+            {
+                text: "x + 7 = 15",
+                type: "Terbuka",
+                explanation: "Merupakan **Kalimat Terbuka** karena mengandung variabel $x$. Nilai kebenarannya belum dapat ditentukan sebelum $x$ diganti angka tertentu."
+            },
+            {
+                text: "Matahari terbit dari sebelah timur.",
+                type: "Tertutup - Benar",
+                explanation: "Merupakan **Kalimat Tertutup (Pernyataan) BENAR** karena sudah pasti benar sesuai dengan fakta alamiah sains."
+            },
+            {
+                text: "5 + 8 = 20",
+                type: "Tertutup - Salah",
+                explanation: "Merupakan **Kalimat Tertutup (Pernyataan) SALAH** karena $5 + 8$ bernilai $13$, bukan $20$."
+            },
+            {
+                text: "3p - 4 > 11",
+                type: "Terbuka",
+                explanation: "Merupakan **Kalimat Terbuka** karena memuat variabel $p$. Kebenarannya bergantung pada nilai $p$ yang disubstitusikan."
+            },
+            {
+                text: "Jumlah sudut dalam sebuah segitiga adalah 180°.",
+                type: "Tertutup - Benar",
+                explanation: "Merupakan **Kalimat Tertutup (Pernyataan) BENAR** sesuai dengan hukum dasar geometri euclides."
+            },
+            {
+                text: "y adalah bilangan genap prima.",
+                type: "Terbuka",
+                explanation: "Merupakan **Kalimat Terbuka** karena adanya variabel $y$. Jika $y=2$ kalimat bernilai benar, namun jika $y=4$ bernilai salah."
+            },
+            {
+                text: "Ibu kota Negara Kesatuan Republik Indonesia adalah Surabaya.",
+                type: "Tertutup - Salah",
+                explanation: "Merupakan **Kalimat Tertutup (Pernyataan) SALAH** karena Ibu Kota NKRI secara resmi adalah Jakarta / Nusantara."
+            },
+            {
+                text: "12 ÷ 3 = 4",
+                type: "Tertutup - Benar",
+                explanation: "Merupakan **Kalimat Tertutup (Pernyataan) BENAR** berdasarkan operasi pembagian aritmatika dasar."
+            },
+            {
+                text: "Suatu bilangan jika dikali 2 kemudian ditambah 5 menghasilkan 15.",
+                type: "Terbuka",
+                explanation: "Merupakan **Kalimat Terbuka** karena frasa 'suatu bilangan' memuat peubah/variabel yang belum diketahui nilainya ($2x + 5 = 15$)."
+            },
+            {
+                text: "Bumi memiliki 2 buah Bulan sebagai satelit alami.",
+                type: "Tertutup - Salah",
+                explanation: "Merupakan **Kalimat Tertutup (Pernyataan) SALAH** karena Bumi secara fakta astronomi hanya memiliki 1 Bulan."
+            }
+        ];
+
+        // -------------------------------------------------------------
+        // 2. STATE APLIKASI
+        // -------------------------------------------------------------
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let canAnswer = true;
+        let isMuted = false;
+        let userAnswers = []; // Menyimpan rekap jawaban untuk review
+
+        // -------------------------------------------------------------
+        // 3. SYNTHESIZER AUDIO (Web Audio API)
+        // -------------------------------------------------------------
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function toggleSound() {
+            isMuted = !isMuted;
+            const icon = document.getElementById('sound-icon');
+            if (isMuted) {
+                icon.className = 'fas fa-volume-mute text-red-400';
+            } else {
+                icon.className = 'fas fa-volume-up text-cyan-400';
+                playSound('click');
+            }
+        }
+
+        function playSound(type) {
+            if (isMuted) return;
+            initAudio();
+
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } 
+            else if (type === 'correct') {
+                // Arpeggio Nada Tinggi
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+                osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } 
+            else if (type === 'wrong') {
+                // Nada Error Rendah Sawtooth
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.25);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+            else if (type === 'finish') {
+                // Fanfare Nada Kemenangan
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.15);
+                osc.frequency.setValueAtTime(783.99, now + 0.30);
+                osc.frequency.setValueAtTime(1046.50, now + 0.45);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+                osc.start(now);
+                osc.stop(now + 0.8);
+            }
+        }
+
+        // -------------------------------------------------------------
+        // 4. ANIMASI BACKGROUND CANVAS (Starry Space Background)
+        // -------------------------------------------------------------
+        const canvas = document.getElementById('space-canvas');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initStars();
+        }
+
+        function initStars() {
+            stars = [];
+            const count = Math.floor((canvas.width * canvas.height) / 3000);
+            for (let i = 0; i < count; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2,
+                    color: ['#ffffff', '#38bdf8', '#c084fc', '#fef08a'][Math.floor(Math.random() * 4)],
+                    alpha: Math.random(),
+                    speed: Math.random() * 0.02 + 0.005
+                });
+            }
+        }
+
+        function animateStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw Gradient Background Deep Space
+            let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            bgGrad.addColorStop(0, '#050714');
+            bgGrad.addColorStop(0.5, '#0b132b');
+            bgGrad.addColorStop(1, '#050714');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Render Stars
+            stars.forEach(star => {
+                star.alpha += star.speed;
+                if (star.alpha > 1 || star.alpha < 0) {
+                    star.speed = -star.speed;
+                }
+                ctx.save();
+                ctx.globalAlpha = Math.abs(star.alpha);
+                ctx.fillStyle = star.color;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            requestAnimationFrame(animateStars);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        animateStars();
+
+        // -------------------------------------------------------------
+        // 5. LOGIKA KUIS & PERTANYAAN
+        // -------------------------------------------------------------
+        function startQuiz() {
+            playSound('click');
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            
+            currentQuestionIndex = 0;
+            score = 0;
+            streak = 0;
+            maxStreak = 0;
+            userAnswers = [];
+            
+            updateScoreDisplay();
+            showQuestion();
+        }
+
+        function showQuestion() {
+            canAnswer = true;
+            const q = questions[currentQuestionIndex];
+            
+            // Update Progress & Score Info
+            document.getElementById('question-number').innerText = `${currentQuestionIndex + 1}/${questions.length}`;
+            document.getElementById('question-text').innerText = q.text;
+            
+            const progressPercent = ((currentQuestionIndex + 1) / questions.length) * 100;
+            document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+
+            // Reset UI Penjelasan & Next Button
+            document.getElementById('explanation-box').className = "hidden p-4 rounded-2xl mb-6 text-sm border transition-all duration-300";
+            document.getElementById('next-btn').classList.add('hidden');
+
+            // Render Opsi Jawaban
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            const options = [
+                { text: "Kalimat Terbuka", val: "Terbuka", icon: "fa-lock-open", color: "hover:border-cyan-400" },
+                { text: "Kalimat Tertutup (Benar)", val: "Tertutup - Benar", icon: "fa-check-circle", color: "hover:border-emerald-400" },
+                { text: "Kalimat Tertutup (Salah)", val: "Tertutup - Salah", icon: "fa-times-circle", color: "hover:border-rose-400" }
+            ];
+
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = `glass-card glass-card-hover p-4 rounded-2xl font-semibold text-gray-200 text-left flex flex-col items-center sm:items-start justify-center gap-2 border border-sky-500/20 text-xs sm:text-sm transition-all ${opt.color}`;
+                btn.innerHTML = `
+                    <div class="flex items-center gap-2 text-sky-300 font-orbitron">
+                        <i class="fas ${opt.icon}"></i>
+                        <span>${opt.text}</span>
+                    </div>
+                `;
+                btn.onclick = () => checkAnswer(opt.val, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedVal, btnElement) {
+            if (!canAnswer) return;
+            canAnswer = false;
+
+            const q = questions[currentQuestionIndex];
+            const isCorrect = selectedVal === q.type;
+            const expBox = document.getElementById('explanation-box');
+            const expTitle = document.getElementById('explanation-title');
+            const expText = document.getElementById('explanation-text');
+
+            // Simpan Rekap Jawaban Pengguna
+            userAnswers.push({
+                question: q.text,
+                userVal: selectedVal,
+                correctVal: q.type,
+                isCorrect: isCorrect,
+                explanation: q.explanation
+            });
+
+            // Matikan Semua Tombol Opsi
+            const allBtns = document.getElementById('options-container').children;
+            for (let btn of allBtns) {
+                btn.disabled = true;
+                btn.classList.remove('glass-card-hover');
+            }
+
+            if (isCorrect) {
+                playSound('correct');
+                streak++;
+                if (streak > maxStreak) maxStreak = streak;
+
+                // Perhitungan Skor (Bonus Combo)
+                const basePoints = 10;
+                const bonusPoints = (streak > 1) ? (streak - 1) * 2 : 0;
+                score += (basePoints + bonusPoints);
+
+                updateScoreDisplay();
+
+                btnElement.classList.add('bg-emerald-900/60', 'border-emerald-400', 'text-white', 'shadow-[0_0_20px_rgba(52,211,153,0.4)]');
+
+                expBox.className = "block p-4 rounded-2xl mb-6 text-sm border bg-emerald-950/50 border-emerald-500/50 text-emerald-100";
+                expTitle.className = "flex items-center gap-2 font-bold font-orbitron mb-1 text-emerald-400";
+                expTitle.innerHTML = `<i class="fas fa-check-circle text-lg"></i> TRANSMISI BERHASIL DEKODE! (+${basePoints + bonusPoints} Skor)`;
+
+            } else {
+                playSound('wrong');
+                streak = 0; // Reset streak jika salah
+                updateScoreDisplay();
+
+                btnElement.classList.add('bg-rose-900/60', 'border-rose-400', 'text-white', 'shadow-[0_0_20px_rgba(244,63,94,0.4)]');
+
+                // Highlight Jawaban yang Benar
+                for (let btn of allBtns) {
+                    if (btn.innerText.includes(q.type.split(' ')[0])) {
+                        btn.classList.add('bg-emerald-950/40', 'border-emerald-500/60');
+                    }
+                }
+
+                expBox.className = "block p-4 rounded-2xl mb-6 text-sm border bg-rose-950/50 border-rose-500/50 text-rose-100";
+                expTitle.className = "flex items-center gap-2 font-bold font-orbitron mb-1 text-rose-400";
+                expTitle.innerHTML = `<i class="fas fa-exclamation-triangle text-lg"></i> TRANSMISI KELIRU!`;
+            }
+
+            expText.innerHTML = q.explanation;
+            document.getElementById('next-btn').classList.remove('hidden');
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('score-display').innerText = score;
+            const comboBadge = document.getElementById('combo-badge');
+            
+            if (streak > 1) {
+                comboBadge.innerText = `🔥 COMBO ${streak}x!`;
+                comboBadge.classList.remove('hidden');
+            } else {
+                comboBadge.classList.add('hidden');
+            }
+        }
+
+        function nextQuestion() {
+            playSound('click');
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                showQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        // -------------------------------------------------------------
+        // 6. HALAMAN HASIL AKHIR & REKAP
+        // -------------------------------------------------------------
+        function showResult() {
+            playSound('finish');
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+
+            const accuracy = Math.round((userAnswers.filter(a => a.isCorrect).length / questions.length) * 100);
+
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('accuracy-text').innerText = `${accuracy}%`;
+            document.getElementById('max-combo-text').innerText = `${maxStreak}x`;
+
+            const rankTitle = document.getElementById('rank-title');
+            const resultBadge = document.getElementById('result-badge');
+            const resultMsg = document.getElementById('result-message');
+
+            if (accuracy >= 90) {
+                resultBadge.innerText = "👨‍🚀";
+                rankTitle.innerText = "Gelar: KOMANDAN GALAKSI";
+                rankTitle.className = "text-xl font-bold font-orbitron text-yellow-300 glow-text-cyan mt-1";
+                resultMsg.innerText = "Luar biasa! Pemahaman Anda tentang kalimat terbuka dan tertutup sangat sempurna! Seluruh sinyal luar angkasa terdekode dengan presisi tinggi.";
+            } else if (accuracy >= 70) {
+                resultBadge.innerText = "🚀";
+                rankTitle.innerText = "Gelar: KAPTEN ROKET";
+                rankTitle.className = "text-xl font-bold font-orbitron text-cyan-300 mt-1";
+                resultMsg.innerText = "Kerja bagus, Kapten! Misi berhasil diselesaikan dengan baik. Tingkatkan sedikit lagi latihan untuk meraih gelar Komandan Galaksi.";
+            } else {
+                resultBadge.innerText = "🛰️";
+                rankTitle.innerText = "Gelar: TARUNA LUAR ANGKASA";
+                rankTitle.className = "text-xl font-bold font-orbitron text-purple-300 mt-1";
+                resultMsg.innerText = "Interferensi sinyal cukup tinggi! Pelajari kembali perbedaan kalimat terbuka (memuat variabel) dan kalimat tertutup lalu coba lagi.";
+            }
+
+            renderReviewModal();
+        }
+
+        function renderReviewModal() {
+            const reviewList = document.getElementById('review-list');
+            reviewList.innerHTML = '';
+
+            userAnswers.forEach((ans, index) => {
+                const item = document.createElement('div');
+                item.className = `p-4 rounded-2xl border text-left text-xs sm:text-sm ${
+                    ans.isCorrect ? 'bg-emerald-950/20 border-emerald-500/30' : 'bg-rose-950/20 border-rose-500/30'
+                }`;
+
+                item.innerHTML = `
+                    <div class="flex justify-between items-start gap-2 mb-2 font-orbitron">
+                        <span class="font-bold text-sky-300">Soal #${index + 1}</span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            ans.isCorrect ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                        }">
+                            ${ans.isCorrect ? 'BENAR' : 'SALAH'}
+                        </span>
+                    </div>
+                    <p class="text-white font-semibold mb-2">${ans.question}</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs text-gray-300 mb-2">
+                        <div>Jawaban Anda: <strong class="${ans.isCorrect ? 'text-emerald-400' : 'text-rose-400'}">${ans.userVal}</strong></div>
+                        <div>Kunci Jawaban: <strong class="text-cyan-400">${ans.correctVal}</strong></div>
+                    </div>
+                    <p class="text-gray-300 text-xs italic bg-slate-900/60 p-2.5 rounded-xl border border-sky-500/10">${ans.explanation}</p>
+                `;
+                reviewList.appendChild(item);
+            });
+        }
+
+        function toggleReviewModal(show) {
+            playSound('click');
+            const modal = document.getElementById('review-modal');
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function restartQuiz() {
+            startQuiz();
+        }
+    </script>
+</body>
+</html>
+```eof
+
+### Detail Rincian Fitur Aplikasi:
+1. **Tema Visual Luar Angkasa**:
+   - Tampilan *Starry Background* adaptif yang dirender menggunakan HTML5 `<canvas>` JavaScript secara dinamis.
+   - *Card* berdesain *Glassmorphism* dengan perpaduan warna neon futuristik (*Cyan, Purple, Deep Space Blue*).
+   - Animasi mengapung (*floating animation*) pada roket dan *pulsing glow effect*.
+
+2. **Efek Suara Synthesizer (Web Audio API)**:
+   - Efek suara sintetis tanpa memerlukan dependensi/file mp3 eksternal.
+   - Nada tinggi berjejer (*arpeggio*) saat **Jawaban Benar**, nada *sawtooth* berfrekuensi rendah saat **Jawaban Salah**, serta suara klik tombol.
+   - **Tombol Mute/Unmute Suara** di kanan atas dengan ikon yang langsung merespons status audio.
+
+3. **Sistem Kuis & Edukasi Materi**:
+   - Soal mengenai **Kalimat Terbuka** (kalimat yang belum pasti nilai kebenarannya karena memuat variabel) dan **Kalimat Tertutup/Pernyataan** (sudah pasti bernilai Benar/Salah).
+   - Opsi jawaban intuitif dengan ikon dan indikator warna.
+   - **Pembahasan/Penjelasan Instan** yang otomatis muncul saat tombol opsi ditekan.
+   - Fitur **Combo Streak System** (efek bonus poin beruntun jika menjawab benar berturut-turut) beserta *progress bar* animasi.
+
+4. **Ringkasan Akhir & Rekapitulasi**:
+   - Skor Akhir, Presentase Akurasi, dan Max Combo.
+   - **Sistem Gelar Astronot**:
+     - 👨‍🚀 *Komandan Galaksi* (Akurasi $\ge$ 90%)
+     - 🚀 *Kapten Roket* (Akurasi $\ge$ 70%)
+     - 🛰️ *Taruna Luar Angkasa* (Akurasi < 70%)
+   - **Fitur Modal "Lihat Pembahasan"**: Pengguna dapat melihat kembali seluruh jawaban yang pernah dipilih lengkap dengan status benar/salah dan penjelasan alasannya.
